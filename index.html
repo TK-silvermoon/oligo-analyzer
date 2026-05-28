@@ -187,6 +187,36 @@ textarea { resize: vertical; min-height: 70px; line-height: 1.6; }
   margin: 16px 0;
 }
 
+/* Advanced settings accordion */
+.adv-toggle {
+  display: flex; align-items: center; gap: 6px;
+  margin-top: 14px; cursor: pointer;
+  font-size: 12px; color: var(--text2);
+  user-select: none; width: fit-content;
+}
+.adv-toggle:hover { color: var(--text); }
+.adv-arrow { font-size: 10px; transition: transform 0.2s; display: inline-block; }
+.adv-arrow.open { transform: rotate(90deg); }
+.adv-body { display: none; margin-top: 12px; }
+.adv-body.open { display: block; }
+
+/* Enzyme presets */
+.preset-label { font-size: 12px; color: var(--text2); margin-bottom: 8px; }
+.preset-grid {
+  display: flex; flex-wrap: wrap; gap: 6px;
+  margin-bottom: 14px;
+}
+.preset-btn {
+  padding: 5px 12px; border-radius: 6px;
+  border: 1px solid var(--border);
+  background: var(--surface2); color: var(--text2);
+  font-size: 12px; cursor: pointer;
+  transition: all 0.15s;
+}
+.preset-btn:hover { border-color: var(--accent); color: var(--text); }
+.preset-btn.active { border-color: var(--accent); background: rgba(79,156,249,0.12); color: var(--accent); }
+.preset-note { font-size: 11px; color: var(--text2); margin-bottom: 10px; min-height: 16px; }
+
 @media (max-width: 480px) {
   .stat-grid { grid-template-columns: repeat(2, 1fr); }
   .params-row { grid-template-columns: 1fr; }
@@ -211,29 +241,39 @@ textarea { resize: vertical; min-height: 70px; line-height: 1.6; }
     <textarea id="seqInput" placeholder="例: ATCGATCGATCGATCG" spellcheck="false" oninput="onSeqChange()"></textarea>
     <div id="seqInfo" class="seq-info"></div>
 
-    <div class="params-row">
-      <div>
-        <div class="param-label-row">
-          <label>NaCl濃度</label>
-          <span class="param-hint">mM</span>
-        </div>
-        <input type="number" id="saltConc" value="50" min="1" max="1000">
-      </div>
-      <div>
-        <div class="param-label-row">
-          <label>オリゴ濃度</label>
-          <span class="param-hint">nM</span>
-        </div>
-        <input type="number" id="oligoConc" value="250" min="1">
-      </div>
-    </div>
-
     <div style="margin-top:14px;">
       <label>Tm計算方法</label>
       <div class="toggle-group">
         <button class="toggle-btn" id="btn-wallace" onclick="setMethod('wallace')">Wallace則</button>
         <button class="toggle-btn active" id="btn-both"    onclick="setMethod('both')">両方表示</button>
         <button class="toggle-btn" id="btn-nn"      onclick="setMethod('nn')">最近傍法</button>
+      </div>
+    </div>
+
+    <!-- Advanced settings (collapsed by default) -->
+    <div class="adv-toggle" onclick="toggleAdv()">
+      <span class="adv-arrow" id="advArrow">▶</span>
+      <span>詳細設定（酵素・濃度）</span>
+    </div>
+    <div class="adv-body" id="advBody">
+      <div class="preset-label">PCR酵素プリセット</div>
+      <div class="preset-grid" id="presetGrid"></div>
+      <div class="preset-note" id="presetNote"></div>
+      <div class="params-row">
+        <div>
+          <div class="param-label-row">
+            <label>NaCl相当濃度</label>
+            <span class="param-hint">mM</span>
+          </div>
+          <input type="number" id="saltConc" value="50" min="1" max="1000" oninput="clearPreset()">
+        </div>
+        <div>
+          <div class="param-label-row">
+            <label>オリゴ濃度</label>
+            <span class="param-hint">nM</span>
+          </div>
+          <input type="number" id="oligoConc" value="200" min="1" oninput="clearPreset()">
+        </div>
       </div>
     </div>
   </div>
@@ -289,6 +329,66 @@ textarea { resize: vertical; min-height: 70px; line-height: 1.6; }
 </div><!-- /container -->
 
 <script>
+// ============================================================
+// Enzyme Presets
+// ============================================================
+const PRESETS = [
+  { id:'general',    label:'汎用PCR',         salt:50,  oligo:200, note:'Primer3標準条件 / 50 mM KCl, 200 nM primer' },
+  { id:'kodfxneo',   label:'KOD FX Neo',      salt:50,  oligo:200, note:'Toyobo KOD FX Neo / 0.15–0.3 µM primer 推奨' },
+  { id:'primestar',  label:'PrimeSTAR Max',   salt:50,  oligo:250, note:'Takara PrimeSTAR Max / Mg²⁺ 1 mM, 0.2–0.3 µM primer' },
+  { id:'extaq',      label:'Ex Taq / Taq系',  salt:50,  oligo:200, note:'標準 Taq 系 / 50 mM KCl, 1.5 mM MgCl₂' },
+  { id:'q5',         label:'Q5 (NEB)',         salt:50,  oligo:200, note:'NEB Q5 High-Fidelity / 標準高忠実度条件' },
+];
+
+let activePreset = 'general';
+
+function initPresets() {
+  const grid = document.getElementById('presetGrid');
+  PRESETS.forEach(p => {
+    const btn = document.createElement('button');
+    btn.className = 'preset-btn' + (p.id === activePreset ? ' active' : '');
+    btn.id = 'preset-' + p.id;
+    btn.textContent = p.label;
+    btn.onclick = () => applyPreset(p.id);
+    grid.appendChild(btn);
+  });
+  updatePresetNote(activePreset);
+}
+
+function applyPreset(id) {
+  const p = PRESETS.find(x => x.id === id);
+  if (!p) return;
+  activePreset = id;
+  document.getElementById('saltConc').value  = p.salt;
+  document.getElementById('oligoConc').value = p.oligo;
+  PRESETS.forEach(x => {
+    document.getElementById('preset-'+x.id).classList.toggle('active', x.id === id);
+  });
+  updatePresetNote(id);
+}
+
+function updatePresetNote(id) {
+  const p = PRESETS.find(x => x.id === id);
+  document.getElementById('presetNote').textContent = p ? p.note : '';
+}
+
+function clearPreset() {
+  activePreset = null;
+  PRESETS.forEach(x => document.getElementById('preset-'+x.id).classList.remove('active'));
+  document.getElementById('presetNote').textContent = '';
+}
+
+function toggleAdv() {
+  const body  = document.getElementById('advBody');
+  const arrow = document.getElementById('advArrow');
+  const open  = body.classList.toggle('open');
+  arrow.classList.toggle('open', open);
+}
+
+document.addEventListener('DOMContentLoaded', initPresets);
+
+// ============================================================
+
 const NN = {
   'AA': { dH: -7.9,  dS: -22.2 },
   'TT': { dH: -7.9,  dS: -22.2 },
