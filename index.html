@@ -67,7 +67,7 @@ textarea{resize:vertical;min-height:62px;line-height:1.6;}
 .preset-note{font-size:11px;color:var(--text2);margin-bottom:10px;min-height:16px;}
 
 /* ── Analyze button ── */
-.btn-analyze{width:100%;padding:13px;background:linear-gradient(135deg,var(--accent),var(--accent2));border:none;border-radius:10px;color:#fff;font-size:15px;font-weight:700;cursor:pointer;margin-top:4px;transition:opacity .2s;letter-spacing:.3px;}
+.btn-analyze{width:100%;padding:13px;background:linear-gradient(135deg,var(--accent),var(--accent2));border:none;border-radius:10px;color:#fff;font-size:15px;font-weight:700;cursor:pointer;margin-top:4px;transition:opacity .2s;letter-spacing:.3px;position:relative;z-index:1;}
 .btn-analyze:hover{opacity:.88;}
 .btn-analyze:active{opacity:.75;}
 
@@ -597,8 +597,8 @@ function analyze(){
   _currentEps=eps; _currentMW=mw;
 
   const seqEl=document.getElementById('seqDisplay');
-  seqEl.querySelector('.seq-display-text').textContent=`5'─ ${seq} ─3'`;
-  seqEl.dataset&&(seqEl.dataset.copy=`5'- ${seq} -3'`);
+  seqEl.textContent=`5'─ ${seq} ─3'`;
+  seqEl.dataset.copy=`5'- ${seq} -3'`;
 
   document.getElementById('statLen').textContent=seq.length;
   document.getElementById('statGC').textContent=gc.toFixed(1)+'%';
