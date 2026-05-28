@@ -1,0 +1,504 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>オリゴアナライザー</title>
+<style>
+:root {
+  --bg: #0f1117;
+  --surface: #1a1d27;
+  --surface2: #22263a;
+  --border: #2d3148;
+  --accent: #4f9cf9;
+  --accent2: #7c3aed;
+  --green: #22c55e;
+  --orange: #f97316;
+  --red: #ef4444;
+  --text: #e2e8f0;
+  --text2: #94a3b8;
+  --mono: 'Courier New', monospace;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'Segoe UI', system-ui, sans-serif;
+  min-height: 100vh;
+  padding: 28px 16px 60px;
+}
+.container { max-width: 780px; margin: 0 auto; }
+
+header {
+  display: flex; align-items: center; gap: 14px;
+  margin-bottom: 28px;
+}
+.logo {
+  width: 44px; height: 44px; flex-shrink: 0;
+  background: linear-gradient(135deg, var(--accent), var(--accent2));
+  border-radius: 12px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 22px;
+}
+header h1 { font-size: 20px; font-weight: 700; }
+header p { font-size: 12px; color: var(--text2); margin-top: 2px; }
+
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 20px;
+  margin-bottom: 14px;
+}
+.card-title {
+  font-size: 11px; font-weight: 700;
+  text-transform: uppercase; letter-spacing: 0.8px;
+  color: var(--text2); margin-bottom: 14px;
+}
+
+label { font-size: 12px; color: var(--text2); display: block; margin-bottom: 6px; }
+textarea, input[type="number"] {
+  width: 100%;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  color: var(--text);
+  font-family: var(--mono);
+  font-size: 14px;
+  padding: 10px 12px;
+  outline: none;
+  transition: border-color 0.2s;
+}
+textarea:focus, input:focus { border-color: var(--accent); }
+textarea { resize: vertical; min-height: 70px; line-height: 1.6; }
+
+.params-row {
+  display: grid; grid-template-columns: 1fr 1fr;
+  gap: 12px; margin-top: 14px;
+}
+.param-label-row {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-bottom: 6px;
+}
+.param-label-row label { margin-bottom: 0; }
+.param-hint { font-size: 11px; color: var(--border); }
+
+.toggle-group {
+  display: flex; gap: 3px;
+  background: var(--surface2);
+  border-radius: 8px; padding: 3px;
+  margin-top: 12px; width: fit-content;
+}
+.toggle-btn {
+  padding: 6px 16px; border-radius: 6px;
+  border: none; cursor: pointer;
+  font-size: 12px; font-weight: 600;
+  background: transparent; color: var(--text2);
+  transition: all 0.15s;
+}
+.toggle-btn.active { background: var(--accent); color: #fff; }
+
+.btn-analyze {
+  width: 100%; padding: 13px;
+  background: linear-gradient(135deg, var(--accent), var(--accent2));
+  border: none; border-radius: 10px;
+  color: #fff; font-size: 15px; font-weight: 700;
+  cursor: pointer; margin-top: 4px;
+  transition: opacity 0.2s; letter-spacing: 0.3px;
+}
+.btn-analyze:hover { opacity: 0.88; }
+.btn-analyze:active { opacity: 0.75; }
+
+.seq-info { font-size: 12px; color: var(--text2); margin-top: 7px; min-height: 18px; }
+.seq-info.error { color: var(--red); }
+
+/* Results */
+.results { display: none; }
+.results.show { display: block; }
+
+.result-header {
+  font-size: 14px; font-weight: 600;
+  display: flex; align-items: center; gap: 8px;
+  margin-bottom: 12px;
+}
+
+.seq-display {
+  font-family: var(--mono); font-size: 13px;
+  color: var(--text2); background: var(--surface2);
+  border-radius: 8px; padding: 10px 12px;
+  word-break: break-all; margin-bottom: 14px;
+  line-height: 1.6;
+}
+
+.stat-grid {
+  display: grid; grid-template-columns: repeat(3, 1fr);
+  gap: 10px; margin-bottom: 18px;
+}
+.stat-card {
+  background: var(--surface2);
+  border-radius: 10px; padding: 14px 10px;
+  text-align: center;
+}
+.stat-val { font-size: 24px; font-weight: 700; color: var(--accent); }
+.stat-lbl { font-size: 11px; color: var(--text2); margin-top: 3px; }
+
+.tm-row {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 12px 14px;
+  background: var(--surface2);
+  border-radius: 8px; margin-bottom: 8px;
+}
+.tm-method-name { font-size: 13px; font-weight: 600; }
+.tm-method-sub { font-size: 11px; color: var(--text2); margin-top: 2px; }
+.tm-val { font-size: 26px; font-weight: 700; color: var(--green); }
+
+.badge {
+  display: inline-block;
+  font-size: 11px; padding: 2px 9px;
+  border-radius: 20px; font-weight: 700;
+}
+.badge-ok  { background: rgba(34,197,94,0.15);  color: var(--green); }
+.badge-warn{ background: rgba(249,115,22,0.15); color: var(--orange); }
+.badge-bad { background: rgba(239,68,68,0.15);  color: var(--red); }
+
+.structure-box {
+  background: var(--surface2); border-radius: 8px;
+  padding: 14px 16px; font-family: var(--mono); font-size: 13px;
+  line-height: 1.9; white-space: pre; overflow-x: auto;
+  color: var(--text);
+}
+.structure-note {
+  font-size: 12px; color: var(--text2); margin-top: 10px; line-height: 1.7;
+}
+.warning-box {
+  background: rgba(249,115,22,0.08);
+  border: 1px solid rgba(249,115,22,0.25);
+  border-radius: 8px; padding: 10px 14px;
+  font-size: 12px; color: var(--orange);
+  margin-top: 10px;
+}
+.ok-box {
+  font-size: 13px; color: var(--text2);
+  padding: 4px 0;
+}
+
+.divider {
+  border: none; border-top: 1px solid var(--border);
+  margin: 16px 0;
+}
+
+@media (max-width: 480px) {
+  .stat-grid { grid-template-columns: repeat(2, 1fr); }
+  .params-row { grid-template-columns: 1fr; }
+  .tm-val { font-size: 22px; }
+}
+</style>
+</head>
+<body>
+<div class="container">
+
+  <header>
+    <div class="logo">🧬</div>
+    <div>
+      <h1>オリゴアナライザー</h1>
+      <p>Tm値計算 / ヘアピン構造 / 自己ダイマー解析</p>
+    </div>
+  </header>
+
+  <!-- Input Card -->
+  <div class="card">
+    <div class="card-title">配列入力（5'→3'）</div>
+    <textarea id="seqInput" placeholder="例: ATCGATCGATCGATCG" spellcheck="false" oninput="onSeqChange()"></textarea>
+    <div id="seqInfo" class="seq-info"></div>
+
+    <div class="params-row">
+      <div>
+        <div class="param-label-row">
+          <label>NaCl濃度</label>
+          <span class="param-hint">mM</span>
+        </div>
+        <input type="number" id="saltConc" value="50" min="1" max="1000">
+      </div>
+      <div>
+        <div class="param-label-row">
+          <label>オリゴ濃度</label>
+          <span class="param-hint">nM</span>
+        </div>
+        <input type="number" id="oligoConc" value="250" min="1">
+      </div>
+    </div>
+
+    <div style="margin-top:14px;">
+      <label>Tm計算方法</label>
+      <div class="toggle-group">
+        <button class="toggle-btn" id="btn-wallace" onclick="setMethod('wallace')">Wallace則</button>
+        <button class="toggle-btn active" id="btn-both"    onclick="setMethod('both')">両方表示</button>
+        <button class="toggle-btn" id="btn-nn"      onclick="setMethod('nn')">最近傍法</button>
+      </div>
+    </div>
+  </div>
+
+  <button class="btn-analyze" onclick="analyze()">▶ 解析する</button>
+
+  <!-- Results -->
+  <div class="results" id="results">
+
+    <!-- Basic Info + Tm -->
+    <div class="card" style="margin-top:16px;">
+      <div class="result-header">📋 基本情報</div>
+      <div class="seq-display" id="seqDisplay"></div>
+      <div class="stat-grid">
+        <div class="stat-card">
+          <div class="stat-val" id="statLen">—</div>
+          <div class="stat-lbl">塩基長 (bp)</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-val" id="statGC">—</div>
+          <div class="stat-lbl">GC含量 (%)</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-val" id="statMW">—</div>
+          <div class="stat-lbl">分子量 (kDa)</div>
+        </div>
+      </div>
+
+      <hr class="divider">
+      <div class="result-header">🌡 融解温度 (Tm)</div>
+      <div id="tmResults"></div>
+    </div>
+
+    <!-- Hairpin -->
+    <div class="card">
+      <div class="result-header">
+        📎 ヘアピン構造
+        <span class="badge" id="hairpinBadge"></span>
+      </div>
+      <div id="hairpinResult"></div>
+    </div>
+
+    <!-- Self-dimer -->
+    <div class="card">
+      <div class="result-header">
+        🔗 自己ダイマー
+        <span class="badge" id="dimerBadge"></span>
+      </div>
+      <div id="dimerResult"></div>
+    </div>
+
+  </div><!-- /results -->
+</div><!-- /container -->
+
+<script>
+const NN = {
+  'AA': { dH: -7.9,  dS: -22.2 },
+  'TT': { dH: -7.9,  dS: -22.2 },
+  'AT': { dH: -7.2,  dS: -20.4 },
+  'TA': { dH: -7.2,  dS: -21.3 },
+  'CA': { dH: -8.5,  dS: -22.7 },
+  'TG': { dH: -8.5,  dS: -22.7 },
+  'GT': { dH: -8.4,  dS: -22.4 },
+  'AC': { dH: -8.4,  dS: -22.4 },
+  'CT': { dH: -7.8,  dS: -21.0 },
+  'AG': { dH: -7.8,  dS: -21.0 },
+  'GA': { dH: -8.2,  dS: -22.2 },
+  'TC': { dH: -8.2,  dS: -22.2 },
+  'CG': { dH: -10.6, dS: -27.2 },
+  'GC': { dH: -9.8,  dS: -24.4 },
+  'GG': { dH: -8.0,  dS: -19.9 },
+  'CC': { dH: -8.0,  dS: -19.9 }
+};
+const R_GAS = 1.987;
+const WC = { A:'T', T:'A', G:'C', C:'G' };
+
+function complement(b) { return WC[b] || 'N'; }
+function reverseComplement(seq) { return seq.split('').reverse().map(complement).join(''); }
+function normalize(seq) { return seq.toUpperCase().replace(/[\s\r\n]/g,'').replace(/U/g,'T'); }
+function isValid(seq) { return /^[ATGC]+$/.test(seq); }
+function esc(s) { return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+let tmMethod = 'both';
+function setMethod(m) {
+  tmMethod = m;
+  ['wallace','both','nn'].forEach(id =>
+    document.getElementById('btn-'+id).classList.toggle('active', id===m));
+}
+
+function onSeqChange() {
+  const seq = normalize(document.getElementById('seqInput').value);
+  const el = document.getElementById('seqInfo');
+  if (!seq) { el.textContent=''; el.className='seq-info'; return; }
+  if (!isValid(seq)) {
+    el.className='seq-info error';
+    el.textContent='⚠ 無効な文字が含まれています（A / T / G / C のみ使用可）';
+  } else {
+    el.className='seq-info';
+    el.textContent=`${seq.length} bp  |  GC: ${calcGC(seq).toFixed(1)}%`;
+  }
+}
+
+function calcGC(seq) { return ((seq.match(/[GC]/g)||[]).length/seq.length)*100; }
+
+function calcMW(seq) {
+  const w={A:313.21,T:304.19,G:329.21,C:289.18};
+  let mw=seq.split('').reduce((s,b)=>s+(w[b]||0),0);
+  return mw-(seq.length-1)*18.015;
+}
+
+function calcTmWallace(seq) {
+  const A=(seq.match(/A/g)||[]).length, T=(seq.match(/T/g)||[]).length;
+  const G=(seq.match(/G/g)||[]).length, C=(seq.match(/C/g)||[]).length;
+  return 2*(A+T)+4*(G+C);
+}
+
+function calcTmNN(seq,saltMM,oligoNM) {
+  let dH=0,dS=0;
+  for(let i=0;i<seq.length-1;i++){
+    const k=seq[i]+seq[i+1];
+    if(NN[k]){dH+=NN[k].dH;dS+=NN[k].dS;}
+  }
+  function addInit(b){if('GC'.includes(b)){dH+=0.1;dS+=-2.8;}else{dH+=2.3;dS+=4.1;}}
+  addInit(seq[0]); addInit(seq[seq.length-1]);
+  const CT=oligoNM*1e-9;
+  const Tm1M=(dH*1000)/(dS+R_GAS*Math.log(CT/4))-273.15;
+  const TmSalt=Tm1M+16.6*Math.log10(saltMM/1000);
+  return {tm:Math.round(TmSalt*10)/10, dH:dH.toFixed(1), dS:dS.toFixed(1),
+          dG37:(dH-(310.15*dS/1000)).toFixed(2)};
+}
+
+function detectHairpin(seq) {
+  const n=seq.length;
+  let best=null;
+  const maxStem=Math.floor((n-4)/2);
+  for(let stemLen=maxStem;stemLen>=3;stemLen--){
+    for(let i=0;i<=n-2*stemLen-4;i++){
+      for(let jj=i+stemLen+4;jj<=n-stemLen;jj++){
+        let matches=0;
+        for(let k=0;k<stemLen;k++){
+          if(complement(seq[i+k])===seq[jj+stemLen-1-k])matches++;
+        }
+        if(matches===stemLen){
+          const c={i,j:jj,stemLen,loopLen:jj-(i+stemLen),
+                   loopSeq:seq.slice(i+stemLen,jj),
+                   stem5:seq.slice(i,i+stemLen),
+                   stem3:seq.slice(jj,jj+stemLen)};
+          if(!best||stemLen>best.stemLen||(stemLen===best.stemLen&&c.loopLen<best.loopLen))best=c;
+        }
+      }
+    }
+    if(best&&best.stemLen===stemLen)break;
+  }
+  if(best){
+    let dH=0,dS=0;
+    for(let k=0;k<best.stem5.length-1;k++){
+      const k2=best.stem5[k]+best.stem5[k+1];
+      if(NN[k2]){dH+=NN[k2].dH;dS+=NN[k2].dS;}
+    }
+    if('GC'.includes(best.stem5[0])){dH+=0.1;dS+=-2.8;}else{dH+=2.3;dS+=4.1;}
+    const dG_stem=dH-310.15*(dS/1000);
+    const lp=[0,0,0,0,5.6,4.4,3.8,3.5,3.2,3.0,2.9,2.8,2.7];
+    best.dG=(dG_stem+(lp[Math.min(best.loopLen,12)]??2.5)).toFixed(2);
+  }
+  return best;
+}
+
+function buildHairpinDiagram(seq,h){
+  const pre5=seq.slice(0,h.i), post3=seq.slice(h.j+h.stemLen);
+  const lines=[`5'─ ${seq} ─3'`,'','  ヘアピン予測構造:',''];
+  const s=h.stemLen,stem5=h.stem5,stem3=h.stem3,loop=h.loopSeq;
+  for(let k=0;k<s;k++){
+    const b5=stem5[k],b3=stem3[s-1-k];
+    lines.push(`  ${b5}   ${b3}`);
+    if(k<s-1)lines.push('  |   |');
+    else lines.push(`  └─${loop}─┘`);
+  }
+  if(pre5||post3)lines.push('',`  5'フランク: ${pre5||'(なし)'}   3'フランク: ${post3||'(なし)'}`);
+  return lines.join('\n');
+}
+
+function detectSelfDimer(seq){
+  const n=seq.length,rc=reverseComplement(seq);
+  let best=null,best3=null,bestScore=0,best3Score=0;
+  for(let offset=-(n-1);offset<n;offset++){
+    const s1=Math.max(0,offset),s2=Math.max(0,-offset);
+    const ol=Math.min(n-s1,n-s2);
+    if(ol<=0)continue;
+    let maxC=0,cur=0;
+    for(let k=0;k<ol;k++){
+      if(seq[s1+k]===rc[s2+k]){cur++;maxC=Math.max(maxC,cur);}else cur=0;
+    }
+    if(maxC>bestScore){bestScore=maxC;best={offset,start1:s1,start2:s2,overlapLen:ol,maxConsec:maxC};}
+    const involves3=(s1+ol-1)>=n-1||(s2+ol-1)>=n-1;
+    if(involves3&&maxC>best3Score){best3Score=maxC;best3={offset,start1:s1,start2:s2,overlapLen:ol,maxConsec:maxC};}
+  }
+  return {best,best3,best3Score};
+}
+
+function buildDimerAlignment(seq,align){
+  const rc=reverseComplement(seq);
+  const {start1:s1,start2:s2,overlapLen:ol}=align;
+  const ss=seq.slice(s1,s1+ol),rs=rc.slice(s2,s2+ol);
+  const mid=ss.split('').map((b,i)=>b===rs[i]?'|':' ').join('');
+  return `5' ${' '.repeat(s2)}${seq.slice(0,s1)}${ss}${seq.slice(s1+ol)} 3'\n`+
+         `   ${' '.repeat(s2)}${' '.repeat(s1)}${mid}\n`+
+         `3' ${' '.repeat(s1)}${rc.slice(0,s2)}${rs}${rc.slice(s2+ol)} 5'`;
+}
+
+function analyze(){
+  const seq=normalize(document.getElementById('seqInput').value);
+  if(!seq){alert('配列を入力してください。');return;}
+  if(!isValid(seq)){alert('A / T / G / C のみ使用できます。');return;}
+  if(seq.length<5){alert('5塩基以上入力してください。');return;}
+
+  const saltMM=parseFloat(document.getElementById('saltConc').value)||50;
+  const oligoNM=parseFloat(document.getElementById('oligoConc').value)||250;
+
+  const gc=calcGC(seq),mw=calcMW(seq);
+  document.getElementById('seqDisplay').textContent=`5'─ ${seq} ─3'`;
+  document.getElementById('statLen').textContent=seq.length;
+  document.getElementById('statGC').textContent=gc.toFixed(1)+'%';
+  document.getElementById('statMW').textContent=(mw/1000).toFixed(2);
+
+  const tmW=calcTmWallace(seq),tmNN=calcTmNN(seq,saltMM,oligoNM);
+  let tmHTML='';
+  if(tmMethod==='wallace'||tmMethod==='both')
+    tmHTML+=`<div class="tm-row"><div><div class="tm-method-name">Wallace則</div><div class="tm-method-sub">Tm = 2(A+T) + 4(G+C)　※大まかな目安</div></div><div class="tm-val">${tmW}°C</div></div>`;
+  if(tmMethod==='nn'||tmMethod==='both')
+    tmHTML+=`<div class="tm-row"><div><div class="tm-method-name">最近傍法（SantaLucia 1998）</div><div class="tm-method-sub">ΔH=${tmNN.dH} kcal/mol　ΔS=${tmNN.dS} cal/mol/K　ΔG₃₇=${tmNN.dG37} kcal/mol<br>${saltMM}mM NaCl　${oligoNM}nM</div></div><div class="tm-val">${tmNN.tm}°C</div></div>`;
+  document.getElementById('tmResults').innerHTML=tmHTML;
+
+  const hp=detectHairpin(seq);
+  const hpB=document.getElementById('hairpinBadge'),hpR=document.getElementById('hairpinResult');
+  if(hp){
+    const dG=parseFloat(hp.dG),sev=dG<-2?'bad':dG<0?'warn':'ok';
+    hpB.className=`badge badge-${sev}`; hpB.textContent=`ΔG ${hp.dG} kcal/mol`;
+    hpR.innerHTML=`<div class="structure-box">${esc(buildHairpinDiagram(seq,hp))}</div>
+      <div class="structure-note">ステム長: <strong>${hp.stemLen} bp</strong>　ループ長: <strong>${hp.loopLen} nt</strong>　ループ配列: <code>5'─${hp.loopSeq}─3'</code><br>
+      ΔG(37°C) ≈ <strong>${hp.dG} kcal/mol</strong></div>
+      ${dG<-2?'<div class="warning-box">⚠ 安定なヘアピン構造が予測されます（ΔG &lt; −2 kcal/mol）。プライマー性能に影響する可能性があります。</div>':''}`;
+  } else {
+    hpB.className='badge badge-ok'; hpB.textContent='検出されず';
+    hpR.innerHTML='<div class="ok-box">有意なヘアピン構造は検出されませんでした（ステム ≥ 3 bp、ループ ≥ 4 nt）。</div>';
+  }
+
+  const {best,best3,best3Score}=detectSelfDimer(seq);
+  const dmB=document.getElementById('dimerBadge'),dmR=document.getElementById('dimerResult');
+  if(best&&best.maxConsec>=3){
+    dmB.className=`badge badge-${best.maxConsec>=5?'bad':'warn'}`; dmB.textContent=`最長 ${best.maxConsec} bp`;
+    let html=`<div class="structure-box">${esc(buildDimerAlignment(seq,best))}</div>
+      <div class="structure-note">最長連続相補: <strong>${best.maxConsec} bp</strong>`;
+    if(best3&&best3Score>=2)html+=`　｜　<span style="color:var(--orange)">3'末端関与: ${best3Score} bp</span>`;
+    html+='</div>';
+    if(best3Score>=3)html+='<div class="warning-box">⚠ 3\'末端を含む自己ダイマーが検出されました。PCR伸長反応が阻害される可能性があります。</div>';
+    dmR.innerHTML=html;
+  } else {
+    dmB.className='badge badge-ok'; dmB.textContent='問題なし';
+    dmR.innerHTML='<div class="ok-box">有意な自己ダイマーは検出されませんでした（連続相補塩基 < 3 bp）。</div>';
+  }
+
+  const r=document.getElementById('results');
+  r.classList.add('show');
+  r.scrollIntoView({behavior:'smooth',block:'start'});
+}
+</script>
+</body>
+</html>
