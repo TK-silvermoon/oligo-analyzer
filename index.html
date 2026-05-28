@@ -135,6 +135,75 @@ textarea{resize:vertical;min-height:62px;line-height:1.6;}
   .params-row,.nanodrop-grid{grid-template-columns:1fr;}
   .tm-val{font-size:22px;}
 }
+
+/* ── Reference Drawer ── */
+.ref-tab{
+  position:fixed;top:50%;right:0;transform:translateY(-50%);
+  background:var(--surface);border:1px solid var(--border);
+  border-right:none;border-radius:10px 0 0 10px;
+  padding:14px 8px;cursor:pointer;z-index:200;
+  display:flex;flex-direction:column;align-items:center;gap:6px;
+  transition:background .15s;
+}
+.ref-tab:hover{background:var(--surface2);}
+.ref-tab-icon{font-size:18px;}
+.ref-tab-label{writing-mode:vertical-rl;font-size:11px;font-weight:700;
+  color:var(--text2);letter-spacing:.5px;transform:rotate(180deg);}
+
+.ref-overlay{
+  display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:300;
+  opacity:0;transition:opacity .25s;
+}
+.ref-overlay.open{display:block;}
+.ref-overlay.visible{opacity:1;}
+
+.ref-drawer{
+  position:fixed;top:0;right:0;bottom:0;width:min(420px,92vw);
+  background:var(--surface);border-left:1px solid var(--border);
+  z-index:400;overflow-y:auto;
+  transform:translateX(100%);transition:transform .28s cubic-bezier(.4,0,.2,1);
+  display:flex;flex-direction:column;
+}
+.ref-drawer.open{transform:translateX(0);}
+
+.ref-drawer-header{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:18px 20px 14px;border-bottom:1px solid var(--border);
+  position:sticky;top:0;background:var(--surface);z-index:1;
+}
+.ref-drawer-title{font-size:15px;font-weight:700;}
+.ref-close{background:none;border:none;color:var(--text2);font-size:20px;
+  cursor:pointer;padding:2px 6px;border-radius:6px;line-height:1;}
+.ref-close:hover{color:var(--text);background:var(--surface2);}
+
+.ref-body{padding:20px;flex:1;}
+
+.ref-section{margin-bottom:28px;}
+.ref-section-title{
+  font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;
+  color:var(--accent);margin-bottom:12px;padding-bottom:6px;
+  border-bottom:1px solid var(--border);
+}
+.ref-block{
+  background:var(--surface2);border-radius:8px;padding:12px 14px;
+  margin-bottom:10px;
+}
+.ref-block-title{font-size:13px;font-weight:700;margin-bottom:6px;}
+.ref-block p,.ref-block li{font-size:12px;color:var(--text2);line-height:1.7;margin-bottom:4px;}
+.ref-formula{
+  font-family:var(--mono);font-size:12px;
+  background:var(--bg);border-radius:6px;padding:8px 10px;
+  margin:8px 0;color:var(--green);line-height:1.8;
+}
+.ref-cite{font-size:11px;color:var(--border);margin-top:6px;font-style:italic;}
+.ref-table{width:100%;border-collapse:collapse;font-size:11px;margin-top:8px;}
+.ref-table th{background:var(--bg);color:var(--text2);padding:4px 8px;text-align:left;border-bottom:1px solid var(--border);}
+.ref-table td{padding:4px 8px;color:var(--text);border-bottom:1px solid rgba(45,49,72,.5);font-family:var(--mono);}
+.ref-table tr:last-child td{border-bottom:none;}
+
+.ref-cite-list{margin-top:6px;}
+.ref-cite-list li{font-size:11px;color:var(--text2);line-height:1.6;margin-bottom:6px;list-style:none;padding-left:12px;position:relative;}
+.ref-cite-list li::before{content:'[';position:absolute;left:0;}
 </style>
 </head>
 <body>
@@ -608,6 +677,183 @@ function analyze(){
 }
 
 document.addEventListener('DOMContentLoaded',initPresets);
+
+// ── Reference Drawer ───────────────────────────────────────
+function openRef(){
+  const ov=document.getElementById('refOverlay');
+  const dr=document.getElementById('refDrawer');
+  ov.classList.add('open');
+  requestAnimationFrame(()=>{ov.classList.add('visible');dr.classList.add('open');});
+}
+function closeRef(){
+  const ov=document.getElementById('refOverlay');
+  const dr=document.getElementById('refDrawer');
+  ov.classList.remove('visible');dr.classList.remove('open');
+  setTimeout(()=>ov.classList.remove('open'),280);
+}
 </script>
+
+<!-- ── Reference Tab (fixed right side) ── -->
+<div class="ref-tab" onclick="openRef()" title="計算式・引用情報">
+  <span class="ref-tab-icon">📄</span>
+  <span class="ref-tab-label">解説・引用</span>
+</div>
+
+<!-- ── Overlay ── -->
+<div class="ref-overlay" id="refOverlay" onclick="closeRef()"></div>
+
+<!-- ── Drawer ── -->
+<div class="ref-drawer" id="refDrawer">
+  <div class="ref-drawer-header">
+    <span class="ref-drawer-title">📄 計算式・引用情報</span>
+    <button class="ref-close" onclick="closeRef()">✕</button>
+  </div>
+  <div class="ref-body">
+
+    <!-- Tm計算 -->
+    <div class="ref-section">
+      <div class="ref-section-title">Tm 計算方法</div>
+
+      <div class="ref-block">
+        <div class="ref-block-title">① Wallace則</div>
+        <p>短鎖オリゴ（&lt;20 mer）向けの簡易式。GC含量のみを考慮。</p>
+        <div class="ref-formula">Tm (°C) = 2(N<sub>A</sub> + N<sub>T</sub>) + 4(N<sub>G</sub> + N<sub>C</sub>)</div>
+        <p>N = 各塩基の数。精度は ±5°C 程度。高塩・短鎖での目安に使用。</p>
+        <div class="ref-cite">Suggs SV et al. (1981) ICN-UCLA Symp Mol Cell Biol 23:683–693</div>
+      </div>
+
+      <div class="ref-block">
+        <div class="ref-block-title">② 最近傍法（Nearest-Neighbor法）</div>
+        <p>隣接塩基対の積み重なり相互作用（スタッキング）を考慮した高精度法。</p>
+        <div class="ref-formula">Tm (°C) = ΔH × 1000 / (ΔS + R × ln(C<sub>T</sub>/4)) − 273.15</div>
+        <p><strong>ΔH</strong>：最近傍エンタルピー（kcal/mol）の総和＋末端補正<br>
+           <strong>ΔS</strong>：最近傍エントロピー（cal/mol/K）の総和＋末端補正<br>
+           <strong>R</strong>：気体定数 = 1.987 cal/mol/K<br>
+           <strong>C<sub>T</sub></strong>：オリゴ濃度（mol/L）</p>
+        <div class="ref-cite">SantaLucia J Jr. (1998) Proc Natl Acad Sci USA 95(4):1460–1465</div>
+
+        <p style="margin-top:8px;"><strong>塩濃度補正（Owczarzy法）</strong></p>
+        <div class="ref-formula">Tm([Na⁺]) = Tm(1M NaCl) + 16.6 × log₁₀([Na⁺])</div>
+        <div class="ref-cite">Owczarzy R et al. (2004) Biochemistry 43(12):3537–3554</div>
+
+        <p style="margin-top:8px;"><strong>末端補正（initiation parameter）</strong></p>
+        <table class="ref-table">
+          <tr><th>末端塩基</th><th>ΔH (kcal/mol)</th><th>ΔS (cal/mol/K)</th></tr>
+          <tr><td>G or C</td><td>+0.1</td><td>−2.8</td></tr>
+          <tr><td>A or T</td><td>+2.3</td><td>+4.1</td></tr>
+        </table>
+      </div>
+
+      <div class="ref-block">
+        <div class="ref-block-title">最近傍パラメーター一覧（SantaLucia 1998）</div>
+        <table class="ref-table">
+          <tr><th>5'XY3'</th><th>ΔH (kcal/mol)</th><th>ΔS (cal/mol/K)</th></tr>
+          <tr><td>AA/TT</td><td>−7.9</td><td>−22.2</td></tr>
+          <tr><td>AT/TA</td><td>−7.2</td><td>−20.4</td></tr>
+          <tr><td>TA/AT</td><td>−7.2</td><td>−21.3</td></tr>
+          <tr><td>CA/GT</td><td>−8.5</td><td>−22.7</td></tr>
+          <tr><td>GT/CA</td><td>−8.4</td><td>−22.4</td></tr>
+          <tr><td>CT/GA</td><td>−7.8</td><td>−21.0</td></tr>
+          <tr><td>GA/CT</td><td>−8.2</td><td>−22.2</td></tr>
+          <tr><td>CG/GC</td><td>−10.6</td><td>−27.2</td></tr>
+          <tr><td>GC/CG</td><td>−9.8</td><td>−24.4</td></tr>
+          <tr><td>GG/CC</td><td>−8.0</td><td>−19.9</td></tr>
+        </table>
+      </div>
+    </div>
+
+    <!-- 消光係数 -->
+    <div class="ref-section">
+      <div class="ref-section-title">消光係数・濃度計算</div>
+      <div class="ref-block">
+        <div class="ref-block-title">ε₂₆₀ — 消光係数</div>
+        <p>1本鎖DNAの260 nmにおける消光係数を塩基組成から計算。</p>
+        <div class="ref-formula">ε₂₆₀ = n<sub>A</sub>×15400 + n<sub>T</sub>×8700
+        + n<sub>G</sub>×11500 + n<sub>C</sub>×7400</div>
+        <p>単位：L / (mol · cm)。ランダム配列の長鎖では±10%程度の誤差。</p>
+        <div class="ref-cite">Warshaw MM & Tinoco I Jr. (1965) J Mol Biol 13(1):54–64</div>
+      </div>
+      <div class="ref-block">
+        <div class="ref-block-title">Beer–Lambert則による濃度換算</div>
+        <div class="ref-formula">A₂₆₀ = ε × c × l
+c (µM)    = A₂₆₀ × 10⁶ / ε
+c (ng/µL) = c (µM) × MW / 1000</div>
+        <p><strong>l</strong>：光路長 = 1 cm（NanoDropは自動換算）<br>
+           <strong>MW</strong>：分子量（g/mol）<br>
+           nmol = c (µM) × volume (mL)</p>
+      </div>
+    </div>
+
+    <!-- ヘアピン・ダイマー -->
+    <div class="ref-section">
+      <div class="ref-section-title">二次構造解析</div>
+      <div class="ref-block">
+        <div class="ref-block-title">ヘアピン ΔG 推定</div>
+        <div class="ref-formula">ΔG(37°C) = ΔG_stem + ΔG_loop</div>
+        <p>ΔG_stem：ステム部の最近傍法（SantaLucia 1998）<br>
+           ΔG_loop：ループ長に応じたペナルティ（Zuker近似）</p>
+        <p><strong>判定基準：</strong><br>
+           ΔG &gt; 0 kcal/mol → 低リスク（緑）<br>
+           −2 &lt; ΔG ≤ 0 → 要注意（オレンジ）<br>
+           ΔG ≤ −2 → 高リスク（赤）</p>
+      </div>
+      <div class="ref-block">
+        <div class="ref-block-title">ダイマー 連続相補塩基数の目安</div>
+        <p>PCRへの影響は 3'末端の関与が最も重要。</p>
+        <p>連続相補 ≥ 3 bp → 要注意<br>
+           連続相補 ≥ 5 bp → 高リスク<br>
+           3'末端関与 ≥ 3 bp → PCR阻害の可能性大</p>
+        <div class="ref-cite">Vallone PM & Butler JM (2004) BioTechniques 37(2):226–231</div>
+      </div>
+    </div>
+
+    <!-- PCRプリセット -->
+    <div class="ref-section">
+      <div class="ref-section-title">PCR酵素プリセットの根拠</div>
+      <div class="ref-block">
+        <div class="ref-block-title">汎用PCR（Primer3標準）</div>
+        <p>NaCl 50 mM / オリゴ 200 nM<br>
+           Primer3のデフォルト設定に準拠。</p>
+        <div class="ref-cite">Untergasser A et al. (2012) Nucleic Acids Res 40(15):e115</div>
+      </div>
+      <div class="ref-block">
+        <div class="ref-block-title">KOD FX Neo（Toyobo）</div>
+        <p>2× PCR Buffer for KOD FX Neo 使用（組成非公開）<br>
+           推奨プライマー濃度：0.15–0.3 µM（150–300 nM）<br>
+           Tm計算は最近傍法 + 50 mM monovalent salt相当で近似。</p>
+        <div class="ref-cite">Toyobo KFX-201 Product Manual</div>
+      </div>
+      <div class="ref-block">
+        <div class="ref-block-title">PrimeSTAR Max（Takara）</div>
+        <p>2× Premix / Mg²⁺ 1 mM（1× 換算）<br>
+           推奨プライマー濃度：0.2–0.3 µM（200–300 nM）<br>
+           Takara公式はWallace則（Tm = 2(A+T) + 4(G+C) − 5）を推奨。</p>
+        <div class="ref-cite">Takara Cat. #R045Q Product Manual</div>
+      </div>
+      <div class="ref-block">
+        <div class="ref-block-title">Q5 High-Fidelity DNA Polymerase（NEB）</div>
+        <p>Q5 Reaction Buffer（20 mM Tris-HCl, 50 mM KCl, 1.5 mM MgCl₂等）<br>
+           推奨プライマー濃度：0.2–0.5 µM<br>
+           NEB推奨Tm計算：NEB Tm Calculator（最近傍法ベース）。</p>
+        <div class="ref-cite">NEB M0491 Product Information</div>
+      </div>
+    </div>
+
+    <!-- 引用リスト -->
+    <div class="ref-section">
+      <div class="ref-section-title">論文引用リスト</div>
+      <ul class="ref-cite-list">
+        <li>1] SantaLucia J Jr. (1998) "A unified view of polymer, dumbbell, and oligonucleotide DNA nearest-neighbor thermodynamics." <em>Proc Natl Acad Sci USA</em> 95(4):1460–1465.</li>
+        <li>2] Owczarzy R et al. (2004) "Effects of sodium ions on DNA duplex oligomers." <em>Biochemistry</em> 43(12):3537–3554.</li>
+        <li>3] Warshaw MM & Tinoco I Jr. (1965) "Optical properties of sixteen dinucleoside phosphates." <em>J Mol Biol</em> 13(1):54–64.</li>
+        <li>4] Suggs SV et al. (1981) "Use of synthetic oligonucleotide hybridization probes for the characterization of genes." <em>ICN-UCLA Symp Mol Cell Biol</em> 23:683–693.</li>
+        <li>5] Vallone PM & Butler JM (2004) "AutoDimer: a screening tool for primer-dimer and hairpin structures." <em>BioTechniques</em> 37(2):226–231.</li>
+        <li>6] Untergasser A et al. (2012) "Primer3—new capabilities and interfaces." <em>Nucleic Acids Res</em> 40(15):e115.</li>
+      </ul>
+    </div>
+
+  </div><!-- /ref-body -->
+</div><!-- /ref-drawer -->
+
 </body>
 </html>
