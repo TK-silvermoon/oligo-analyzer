@@ -204,6 +204,49 @@ textarea{resize:vertical;min-height:62px;line-height:1.6;}
 .ref-cite-list{margin-top:6px;}
 .ref-cite-list li{font-size:11px;color:var(--text2);line-height:1.6;margin-bottom:6px;list-style:none;padding-left:12px;position:relative;}
 .ref-cite-list li::before{content:'[';position:absolute;left:0;}
+
+/* ── Grade badges ── */
+.grade-badge{display:inline-flex;align-items:center;justify-content:center;
+  width:56px;height:56px;border-radius:14px;font-size:26px;font-weight:900;letter-spacing:-1px;}
+.grade-s{background:rgba(168,85,247,.2);color:#a855f7;}
+.grade-a{background:rgba(34,197,94,.2);color:var(--green);}
+.grade-b{background:rgba(79,156,249,.2);color:var(--accent);}
+.grade-c{background:rgba(249,115,22,.2);color:var(--orange);}
+.grade-d{background:rgba(239,68,68,.2);color:var(--red);}
+.score-row{display:flex;align-items:center;gap:16px;margin-bottom:14px;}
+.score-info{flex:1;}
+.score-title{font-size:17px;font-weight:700;margin-bottom:2px;}
+.score-subtitle{font-size:12px;color:var(--text2);}
+.criteria-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;margin-top:10px;}
+@media(max-width:520px){.criteria-grid{grid-template-columns:1fr 1fr;}}
+.criterion{background:var(--surface2);border-radius:6px;padding:8px 10px;
+  display:flex;justify-content:space-between;align-items:center;}
+.crit-name{font-size:11px;color:var(--text2);}
+.crit-val{font-size:11px;font-weight:700;}
+.crit-ok{color:var(--green);}
+.crit-warn{color:var(--orange);}
+.crit-bad{color:var(--red);}
+
+/* ── Ta recommendation ── */
+.ta-box{display:flex;align-items:center;justify-content:space-between;
+  padding:12px 16px;background:rgba(79,156,249,.08);
+  border:1px solid rgba(79,156,249,.2);border-radius:8px;margin-top:12px;}
+.ta-left{display:flex;flex-direction:column;}
+.ta-label{font-size:12px;color:var(--text2);margin-bottom:2px;}
+.ta-enzyme{font-size:11px;color:var(--border);}
+.ta-val{font-size:28px;font-weight:700;color:var(--accent);}
+.ta-unit{font-size:14px;font-weight:400;margin-left:2px;}
+
+/* ── 3' end analysis ── */
+.end-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:10px;}
+@media(max-width:520px){.end-grid{grid-template-columns:repeat(2,1fr);}}
+.end-card{background:var(--surface2);border-radius:8px;padding:10px 8px;text-align:center;}
+.end-val{font-size:18px;font-weight:700;}
+.end-lbl{font-size:10px;color:var(--text2);margin-top:3px;line-height:1.4;}
+
+/* ── Mg correction badge ── */
+.method-badge{display:inline-block;font-size:10px;padding:1px 6px;border-radius:4px;
+  background:rgba(168,85,247,.15);color:#a855f7;font-weight:700;margin-left:6px;vertical-align:middle;}
 </style>
 </head>
 <body>
@@ -256,6 +299,17 @@ textarea{resize:vertical;min-height:62px;line-height:1.6;}
         <input type="number" id="oligoConc" value="200" min="1" oninput="clearPreset()">
       </div>
     </div>
+    <div class="params-row" style="margin-top:10px;">
+      <div>
+        <div class="param-label-row"><label>Mg²⁺ 濃度（総量）</label><span class="param-hint">mM</span></div>
+        <input type="number" id="mgConc" value="1.5" min="0" max="20" step="0.1" oninput="clearPreset()">
+      </div>
+      <div>
+        <div class="param-label-row"><label>dNTP 総濃度</label><span class="param-hint">mM</span></div>
+        <input type="number" id="dntpConc" value="0.8" min="0" max="10" step="0.1" oninput="clearPreset()">
+      </div>
+    </div>
+    <div style="font-size:11px;color:var(--border);margin-top:6px;">遊離 Mg²⁺ = Mg²⁺ − dNTP　（Owczarzy 2008 / IDT相当精度）</div>
   </div>
 </div>
 
@@ -274,13 +328,24 @@ textarea{resize:vertical;min-height:62px;line-height:1.6;}
     <div class="stat-grid">
       <div class="stat-card"><div class="stat-val" id="statLen">—</div><div class="stat-lbl">塩基長 (bp)</div></div>
       <div class="stat-card"><div class="stat-val" id="statGC">—</div><div class="stat-lbl">GC含量 (%)</div></div>
-      <div class="stat-card"><div class="stat-val" id="statMW">—</div><div class="stat-lbl">分子量 (kDa)</div></div>
-      <div class="stat-card"><div class="stat-val" id="statEps">—</div><div class="stat-lbl">ε₂₆₀ (×10³ L/mol/cm)</div></div>
+      <div class="stat-card"><div class="stat-val" id="statMW">—</div><div class="stat-lbl">分子量 (kDa)<br><span style="font-size:9px;opacity:.6;">5'-リン酸・3'-OH想定</span></div></div>
+      <div class="stat-card"><div class="stat-val" id="statEps">—</div><div class="stat-lbl">ε₂₆₀ (×10³)<br><span style="font-size:9px;opacity:.6;">加法近似・約10–15%過大</span></div></div>
     </div>
+
+    <hr class="divider">
+    <div class="result-header">🔚 3'末端解析</div>
+    <div id="endResult"></div>
 
     <hr class="divider">
     <div class="result-header">🌡 融解温度 (Tm)</div>
     <div id="tmResults"></div>
+    <div id="taResult"></div>
+  </div>
+
+  <!-- Quality Score -->
+  <div class="card">
+    <div class="result-header">🎯 プライマー品質スコア</div>
+    <div id="qualityResult"></div>
   </div>
 
   <!-- NanoDrop calculator -->
@@ -371,11 +436,11 @@ function esc(s){return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g
 
 // ── Presets ───────────────────────────────────────────────
 const PRESETS=[
-  {id:'general',  label:'汎用PCR',        salt:50,oligo:200,note:'Primer3標準 / 50 mM KCl, 200 nM'},
-  {id:'kodfxneo', label:'KOD FX Neo',     salt:50,oligo:200,note:'Toyobo KOD FX Neo / 0.15–0.3 µM primer 推奨'},
-  {id:'primestar',label:'PrimeSTAR Max',  salt:50,oligo:250,note:'Takara PrimeSTAR Max / Mg²⁺ 1 mM, 0.2–0.3 µM'},
-  {id:'extaq',    label:'Ex Taq / Taq系', salt:50,oligo:200,note:'標準 Taq 系 / 50 mM KCl, 1.5 mM MgCl₂'},
-  {id:'q5',       label:'Q5 (NEB)',        salt:50,oligo:200,note:'NEB Q5 High-Fidelity / 標準条件'},
+  {id:'general',  label:'汎用PCR',        salt:50,mg:1.5,dntp:0.8,oligo:200,taOff:5, note:'50 mM KCl / 1.5 mM MgCl₂ / dNTP 0.2 mM×4'},
+  {id:'kodfxneo', label:'KOD FX Neo',     salt:50,mg:1.5,dntp:0.8,oligo:200,taOff:3, note:'Toyobo KOD FX Neo / 1.5 mM MgCl₂ / 0.15–0.3 µM'},
+  {id:'primestar',label:'PrimeSTAR Max',  salt:50,mg:1.0,dntp:0.8,oligo:250,taOff:3, note:'Takara PrimeSTAR Max / Mg²⁺ 1 mM (1×) / 0.2–0.3 µM'},
+  {id:'extaq',    label:'Ex Taq / Taq系', salt:50,mg:1.5,dntp:0.8,oligo:200,taOff:5, note:'標準 Taq 系 / 1.5 mM MgCl₂'},
+  {id:'q5',       label:'Q5 (NEB)',       salt:50,mg:2.0,dntp:0.8,oligo:200,taOff:1, note:'NEB Q5 / 2 mM MgCl₂（Ta = Tm − 1°C 目安）'},
 ];
 let activePreset='general';
 
@@ -395,6 +460,8 @@ function applyPreset(id){
   activePreset=id;
   document.getElementById('saltConc').value=p.salt;
   document.getElementById('oligoConc').value=p.oligo;
+  document.getElementById('mgConc').value=p.mg;
+  document.getElementById('dntpConc').value=p.dntp;
   PRESETS.forEach(x=>document.getElementById('preset-'+x.id).classList.toggle('active',x.id===id));
   updatePresetNote(id);
 }
@@ -430,11 +497,14 @@ function onSeqChange(n){
 
 // ── Basic stats ────────────────────────────────────────────
 function calcGC(seq){return((seq.match(/[GC]/g)||[]).length/seq.length)*100;}
+// MW: residue masses (dNMP − H₂O per bond), assumes 5'-phosphate / 3'-OH terminus
+// Matches IDT/Sigma convention; 5'-OH oligos differ by −79.98 Da (HPO₃)
 function calcMW(seq){
   const w={A:313.21,T:304.19,G:329.21,C:289.18};
   return seq.split('').reduce((s,b)=>s+(w[b]||0),0)-(seq.length-1)*18.015;
 }
-// Extinction coefficient ε₂₆₀ — Warshaw & Tinoco (1965) single-nucleotide values
+// ε₂₆₀: additive approximation (Warshaw & Tinoco 1965). Overestimates by ~10–15%
+// vs. nearest-neighbor hypochromicity correction. Use for relative comparison only.
 function calcEps(seq){
   const e={A:15400,T:8700,G:11500,C:7400};
   return seq.split('').reduce((s,b)=>s+(e[b]||0),0);
@@ -499,8 +569,9 @@ function detectHairpin(seq){
     let dH=0,dS=0;
     for(let k=0;k<best.stem5.length-1;k++){const k2=best.stem5[k]+best.stem5[k+1];if(NN[k2]){dH+=NN[k2].dH;dS+=NN[k2].dS;}}
     if('GC'.includes(best.stem5[0])){dH+=0.1;dS+=-2.8;}else{dH+=2.3;dS+=4.1;}
-    const lp=[0,0,0,0,5.6,4.4,3.8,3.5,3.2,3.0,2.9,2.8,2.7];
-    best.dG=(dH-310.15*(dS/1000)+(lp[Math.min(best.loopLen,12)]??2.5)).toFixed(2);
+    // Loop penalty ΔG (kcal/mol, 37°C) — SantaLucia & Hicks 2004 Table 4
+    const lp=[0,0,0,0,5.6,5.1,4.7,4.4,4.3,4.1,4.0,3.9,3.8];
+    best.dG=(dH-310.15*(dS/1000)+(lp[Math.min(best.loopLen,12)]??3.7)).toFixed(2);
   }
   return best;
 }
@@ -531,7 +602,8 @@ function detectDimer(seq1,seq2Arg){
     let maxC=0,cur=0;
     for(let k=0;k<ol;k++){if(seq1[st1+k]===s2[st2+k]){cur++;maxC=Math.max(maxC,cur);}else cur=0;}
     if(maxC>bestScore){bestScore=maxC;best={st1,st2,ol,maxC,n1,n2,s2};}
-    const inv3=(st1+ol-1)>=n1-1||(st2+ol-1)>=n2-1;
+    // 3'-end check: seq1's 3' end = index n1-1; s2[0] = complement of seq1's 3' end
+    const inv3=(st1+ol-1)>=n1-1||st2===0;
     if(inv3&&maxC>best3Score){best3Score=maxC;best3={st1,st2,ol,maxC};}
   }
   return{best,best3,best3Score};
@@ -547,6 +619,103 @@ function buildDimerAlignment(seq1,seq2ArgOrNull,align){
   return `5' ${' '.repeat(st2)}${seq1.slice(0,st1)}${ss}${seq1.slice(st1+ol)} 3'\n`+
          `   ${' '.repeat(st2)}${' '.repeat(st1)}${mid}\n`+
          `3' ${' '.repeat(st1)}${s2.slice(0,st2)}${rs}${s2.slice(st2+ol)} 5' ${label2}`;
+}
+
+// ── Owczarzy 2008 IDT-level Tm ─────────────────────────────
+function calcTmNN_IDT(seq,saltMM,mgMM,dntpMM,oligoNM){
+  let dH=0,dS=0;
+  for(let i=0;i<seq.length-1;i++){const k=seq[i]+seq[i+1];if(NN[k]){dH+=NN[k].dH;dS+=NN[k].dS;}}
+  function addInit(b){if('GC'.includes(b)){dH+=0.1;dS+=-2.8;}else{dH+=2.3;dS+=4.1;}}
+  addInit(seq[0]);addInit(seq[seq.length-1]);
+  const CT=oligoNM*1e-9;
+  const Tm1M_C=(dH*1000)/(dS+R_GAS*Math.log(CT/4))-273.15;
+  const Tm1M_K=Tm1M_C+273.15;
+  const fGC=calcGC(seq)/100;
+  const N=seq.length;
+  const Na_M=Math.max(saltMM/1000,1e-9);
+  const freeMgMM=Math.max(0,mgMM-dntpMM);
+  const Mg_M=freeMgMM/1000;
+  let inv_Tm;
+  if(Mg_M<=1e-9){
+    // Na+のみ: Owczarzy 2004 正確版
+    const lnNa=Math.log(Na_M);
+    inv_Tm=1/Tm1M_K+(4.29*fGC-3.95)*1e-5*lnNa+9.40e-6*lnNa*lnNa;
+  }else{
+    const R=Math.sqrt(Mg_M)/Na_M;
+    const lnMg=Math.log(Mg_M);
+    const b0=9.11e-6,c0=6.26e-5,e0=4.82e-4,f0=5.25e-4,g0=8.31e-5;
+    const loop=(1/(2*(N-1)))*(-e0+f0*lnMg+g0*lnMg*lnMg);
+    if(R<0.22){
+      // Na+支配
+      const lnNa=Math.log(Na_M);
+      inv_Tm=1/Tm1M_K+(4.29*fGC-3.95)*1e-5*lnNa+9.40e-6*lnNa*lnNa;
+    }else if(R<6){
+      // 混合ゾーン: Owczarzy 2008
+      const lnNa=Math.log(Na_M);
+      const a_m=3.92e-5*(0.843-0.352*Math.sqrt(Na_M)*lnNa);
+      const d_m=1.42e-5*(1.279-4.03e-3*lnNa-8.03e-3*lnNa*lnNa);
+      inv_Tm=1/Tm1M_K+a_m-b0*lnMg+fGC*(c0+d_m*lnMg)+loop;
+    }else{
+      // Mg²⁺支配
+      inv_Tm=1/Tm1M_K+3.92e-5-b0*lnMg+fGC*(c0+1.42e-5*lnMg)+loop;
+    }
+  }
+  const Tm_C=1/inv_Tm-273.15;
+  return{tm:Math.round(Tm_C*10)/10,dH:dH.toFixed(1),dS:dS.toFixed(1),
+         dG37:(dH-310.15*dS/1000).toFixed(2),freeMg:freeMgMM.toFixed(2)};
+}
+
+// ── 3' end analysis ─────────────────────────────────────────
+function calc3PrimeGC(seq){return(seq.slice(-5).match(/[GC]/g)||[]).length;}
+function calc3PrimeDG(seq){
+  const end=seq.slice(-5);let dH=0,dS=0;
+  for(let i=0;i<end.length-1;i++){const k=end[i]+end[i+1];if(NN[k]){dH+=NN[k].dH;dS+=NN[k].dS;}}
+  return+(dH-310.15*dS/1000).toFixed(2);
+}
+function detectHomopolymer(seq){
+  const m=seq.match(/A{4,}|T{4,}|G{4,}|C{4,}/g);
+  return m?m.reduce((a,b)=>b.length>a.length?b:a,''):'';
+}
+
+// ── Quality score ────────────────────────────────────────────
+function calcQualityScore(seq,gc,tm,hp,sd3s){
+  let pts=0;
+  const n=seq.length;
+  // Tm (0-3)
+  if(tm>=58&&tm<=64)pts+=3;
+  else if(tm>=55&&tm<=68)pts+=2;
+  else if(tm>=50&&tm<=72)pts+=1;
+  // GC (0-2)
+  if(gc>=45&&gc<=60)pts+=2;
+  else if(gc>=40&&gc<=65)pts+=1;
+  // 長さ (0-2)
+  if(n>=18&&n<=25)pts+=2;
+  else if(n>=15&&n<=30)pts+=1;
+  // ヘアピン (0-2)
+  if(!hp)pts+=2;
+  else if(parseFloat(hp.dG)>-2)pts+=2;
+  else if(parseFloat(hp.dG)>-3)pts+=1;
+  // 3'ダイマー (0-2)
+  if(!sd3s||sd3s<2)pts+=2;
+  else if(sd3s<3)pts+=1;
+  // GCクランプ (0-1)
+  const gc3=calc3PrimeGC(seq);
+  if(gc3>=1&&gc3<=3)pts+=1;
+  return pts;
+}
+function scoreToGrade(pts){
+  if(pts>=11)return{grade:'S',cls:'grade-s',label:'最高品質'};
+  if(pts>=9) return{grade:'A',cls:'grade-a',label:'優秀'};
+  if(pts>=7) return{grade:'B',cls:'grade-b',label:'良好'};
+  if(pts>=5) return{grade:'C',cls:'grade-c',label:'要注意'};
+  return      {grade:'D',cls:'grade-d',label:'見直し推奨'};
+}
+
+// ── Annealing temperature ────────────────────────────────────
+function calcTa(tmIDT){
+  const p=PRESETS.find(x=>x.id===activePreset)||PRESETS[0];
+  const ta=Math.round(tmIDT.tm-p.taOff);
+  return{ta,label:p.label,range:`${ta-2}–${ta+2}°C`};
 }
 
 // ── Copy helpers ───────────────────────────────────────────
@@ -569,9 +738,18 @@ function copyAllResults(){
   const tmW=calcTmWallace(seq);
   const salt=parseFloat(document.getElementById('saltConc').value)||50;
   const oligo=parseFloat(document.getElementById('oligoConc').value)||200;
+  const mg=parseFloat(document.getElementById('mgConc').value)||1.5;
+  const dntp=parseFloat(document.getElementById('dntpConc').value)||0.8;
   const tmNN=calcTmNN(seq,salt,oligo);
+  const tmIDTcopy=calcTmNN_IDT(seq,salt,mg,dntp,oligo);
+  const ptsCopy=calcQualityScore(seq,calcGC(seq),tmIDTcopy.tm,detectHairpin(seq),detectDimer(seq,null).best3Score);
+  const gCopy=scoreToGrade(ptsCopy);
+  const taInfoCopy=calcTa(tmIDTcopy);
   lines.push(`Tm (Wallace): ${tmW}°C`);
   lines.push(`Tm (最近傍法, ${salt}mM NaCl, ${oligo}nM): ${tmNN.tm}°C  ΔH=${tmNN.dH}  ΔS=${tmNN.dS}  ΔG₃₇=${tmNN.dG37}`);
+  lines.push(`Tm (IDT相当, Owczarzy 2008, 遊離Mg²⁺ ${tmIDTcopy.freeMg}mM): ${tmIDTcopy.tm}°C  ΔH=${tmIDTcopy.dH}  ΔS=${tmIDTcopy.dS}  ΔG₃₇=${tmIDTcopy.dG37}`);
+  lines.push(`推奨アニーリング温度 (${taInfoCopy.label}): ${taInfoCopy.ta}°C (${taInfoCopy.range})`);
+  lines.push(`品質スコア: ${gCopy.grade} (${ptsCopy}/12点) — ${gCopy.label}`);
   navigator.clipboard.writeText(lines.join('\n')).then(()=>{
     const btn=event.target;
     btn.textContent='✅ コピーしました';
@@ -592,6 +770,8 @@ function analyze(){
 
   const saltMM=parseFloat(document.getElementById('saltConc').value)||50;
   const oligoNM=parseFloat(document.getElementById('oligoConc').value)||200;
+  const mgMM=parseFloat(document.getElementById('mgConc').value)||1.5;
+  const dntpMM=parseFloat(document.getElementById('dntpConc').value)||0.8;
 
   // ── Basic stats
   const gc=calcGC(seq),mw=calcMW(seq),eps=calcEps(seq);
@@ -610,11 +790,13 @@ function analyze(){
 
   // ── Tm
   const tmW=calcTmWallace(seq),tmNN=calcTmNN(seq,saltMM,oligoNM);
+  const tmIDT=calcTmNN_IDT(seq,saltMM,mgMM,dntpMM,oligoNM);
   let tmHTML='';
   if(tmMethod==='wallace'||tmMethod==='both')
     tmHTML+=`<div class="tm-row"><div><div class="tm-method-name">Wallace則</div><div class="tm-method-sub">Tm = 2(A+T) + 4(G+C)</div></div><div class="tm-val-wrap"><div class="tm-val" id="tmWallaceVal">${tmW}°C</div><button class="copy-btn" onclick="navigator.clipboard.writeText('${tmW}°C').then(()=>{this.textContent='✅';setTimeout(()=>this.textContent='📋 コピー',1500)})">📋 コピー</button></div></div>`;
   if(tmMethod==='nn'||tmMethod==='both')
     tmHTML+=`<div class="tm-row"><div><div class="tm-method-name">最近傍法（SantaLucia 1998）</div><div class="tm-method-sub">ΔH=${tmNN.dH} kcal/mol　ΔS=${tmNN.dS} cal/mol/K　ΔG₃₇=${tmNN.dG37} kcal/mol<br>${saltMM}mM NaCl / ${oligoNM}nM</div></div><div class="tm-val-wrap"><div class="tm-val">${tmNN.tm}°C</div><button class="copy-btn" onclick="navigator.clipboard.writeText('${tmNN.tm}°C').then(()=>{this.textContent='✅';setTimeout(()=>this.textContent='📋 コピー',1500)})">📋 コピー</button></div></div>`;
+  tmHTML+=`<div class="tm-row" style="border-top:1px solid var(--border);margin-top:6px;padding-top:12px;"><div><div class="tm-method-name">IDT相当精度 <span class="method-badge">Owczarzy 2008</span></div><div class="tm-method-sub">ΔH=${tmIDT.dH} kcal/mol　ΔS=${tmIDT.dS} cal/mol/K　ΔG₃₇=${tmIDT.dG37} kcal/mol<br>${saltMM}mM NaCl / 遊離Mg²⁺ ${tmIDT.freeMg}mM / ${oligoNM}nM</div></div><div class="tm-val-wrap"><div class="tm-val" style="color:var(--accent)">${tmIDT.tm}°C</div><button class="copy-btn" onclick="navigator.clipboard.writeText('${tmIDT.tm}°C').then(()=>{this.textContent='✅';setTimeout(()=>this.textContent='📋 コピー',1500)})">📋 コピー</button></div></div>`;
   document.getElementById('tmResults').innerHTML=tmHTML;
 
   // ── Hairpin
@@ -670,6 +852,60 @@ function analyze(){
   }else{
     hdSec.style.display='none';
   }
+
+  // ── 3' end analysis
+  const dg3=calc3PrimeDG(seq);
+  const gc3=calc3PrimeGC(seq);
+  const homo=detectHomopolymer(seq);
+  const gc3Cls=gc3===0?'crit-bad':gc3<=3?'crit-ok':'crit-warn';
+  const dg3Cls=dg3<-2?'crit-bad':dg3<-1?'crit-warn':'crit-ok';
+  const homoCls=homo.length>=4?'crit-bad':'crit-ok';
+  let endHTML=`<div class="end-grid">
+    <div class="end-card"><div class="end-val ${gc3Cls}">${gc3}/5</div><div class="end-lbl">GCクランプ<br>（末端5 nt中）</div></div>
+    <div class="end-card"><div class="end-val ${dg3Cls}">${dg3} kcal/mol</div><div class="end-lbl">末端ΔG(37°C)<br>（最後5 nt）</div></div>
+    <div class="end-card"><div class="end-val ${homoCls}" style="font-size:${homo?'13':'18'}px">${homo?'⚠ '+homo:'✅ なし'}</div><div class="end-lbl">ホモポリマー<br>（4連続以上）</div></div>
+  </div>`;
+  if(gc3===0)endHTML+='<div class="warning-box" style="margin-top:8px;">⚠ 3\'末端にG/Cがありません。3\'クランプ（G or C終端）を推奨。</div>';
+  if(gc3>3)endHTML+='<div class="warning-box" style="margin-top:8px;">⚠ 3\'末端のGC比が高すぎます（ミスプライミングのリスク）。</div>';
+  document.getElementById('endResult').innerHTML=endHTML;
+
+  // ── Quality score
+  const pts=calcQualityScore(seq,gc,tmIDT.tm,hp,sd3s);
+  const g=scoreToGrade(pts);
+  const critItems=[
+    {name:'Tm',val:`${tmIDT.tm}°C`,cls:tmIDT.tm>=58&&tmIDT.tm<=64?'crit-ok':tmIDT.tm>=55&&tmIDT.tm<=68?'crit-warn':'crit-bad'},
+    {name:'GC%',val:`${gc.toFixed(1)}%`,cls:gc>=45&&gc<=60?'crit-ok':gc>=40&&gc<=65?'crit-warn':'crit-bad'},
+    {name:'長さ',val:`${seq.length} nt`,cls:seq.length>=18&&seq.length<=25?'crit-ok':seq.length>=15&&seq.length<=30?'crit-warn':'crit-bad'},
+    {name:'ヘアピン',val:hp?hp.dG+' kcal':'-',cls:!hp||parseFloat(hp.dG)>-2?'crit-ok':parseFloat(hp.dG)>-3?'crit-warn':'crit-bad'},
+    {name:'3\'ダイマー',val:sd3s>=2?sd3s+'bp':'なし',cls:sd3s>=3?'crit-bad':sd3s>=2?'crit-warn':'crit-ok'},
+    {name:'GCクランプ',val:`${gc3}/5`,cls:gc3>=1&&gc3<=3?'crit-ok':'crit-warn'},
+  ];
+  document.getElementById('qualityResult').innerHTML=`
+    <div class="score-row">
+      <div class="grade-badge ${g.cls}">${g.grade}</div>
+      <div class="score-info">
+        <div class="score-title">${g.label}（${pts}/12点）</div>
+        <div class="score-subtitle">IDT基準 6項目評価 — Tm・GC・長さ・ヘアピン・3'ダイマー・GCクランプ</div>
+      </div>
+    </div>
+    <div class="criteria-grid">${critItems.map(c=>`<div class="criterion"><span class="crit-name">${c.name}</span><span class="crit-val ${c.cls}">${c.val}</span></div>`).join('')}</div>
+  `;
+
+  // ── Annealing temperature
+  const taInfo=calcTa(tmIDT);
+  const activeP=PRESETS.find(x=>x.id===activePreset)||PRESETS[0];
+  document.getElementById('taResult').innerHTML=`
+    <div class="ta-box">
+      <div>
+        <div style="font-size:12px;color:var(--text2);margin-bottom:3px;">推奨アニーリング温度（${taInfo.label}）</div>
+        <div style="font-size:11px;color:var(--text2);">Tm(IDT ${tmIDT.tm}°C) − ${activeP.taOff}°C</div>
+      </div>
+      <div style="text-align:right">
+        <div style="font-size:28px;font-weight:900;color:var(--accent);line-height:1">${taInfo.ta}°C</div>
+        <div style="font-size:12px;color:var(--text2);margin-top:2px;">推奨範囲: ${taInfo.range}</div>
+      </div>
+    </div>
+  `;
 
   // Show results
   const r=document.getElementById('results');
@@ -775,7 +1011,7 @@ function closeRef(){
         <p>1本鎖DNAの260 nmにおける消光係数を塩基組成から計算。</p>
         <div class="ref-formula">ε₂₆₀ = n<sub>A</sub>×15400 + n<sub>T</sub>×8700
         + n<sub>G</sub>×11500 + n<sub>C</sub>×7400</div>
-        <p>単位：L / (mol · cm)。ランダム配列の長鎖では±10%程度の誤差。</p>
+        <p>単位：L / (mol · cm)。加法近似のため実値より約10–15%過大評価。<br>高精度が必要な場合は最近傍法による補正値を使用すること（Cantor et al. 1970）。</p>
         <div class="ref-cite">Warshaw MM & Tinoco I Jr. (1965) J Mol Biol 13(1):54–64</div>
       </div>
       <div class="ref-block">
@@ -796,7 +1032,7 @@ c (ng/µL) = c (µM) × MW / 1000</div>
         <div class="ref-block-title">ヘアピン ΔG 推定</div>
         <div class="ref-formula">ΔG(37°C) = ΔG_stem + ΔG_loop</div>
         <p>ΔG_stem：ステム部の最近傍法（SantaLucia 1998）<br>
-           ΔG_loop：ループ長に応じたペナルティ（Zuker近似）</p>
+           ΔG_loop：ループ長ペナルティ（SantaLucia &amp; Hicks 2004 Table 4）</p>
         <p><strong>判定基準：</strong><br>
            ΔG &gt; 0 kcal/mol → 低リスク（緑）<br>
            −2 &lt; ΔG ≤ 0 → 要注意（オレンジ）<br>
