@@ -148,7 +148,7 @@ textarea{resize:vertical;min-height:62px;line-height:1.6;}
 .ref-tab:hover{background:var(--surface2);}
 .ref-tab-icon{font-size:18px;}
 .ref-tab-label{writing-mode:vertical-rl;font-size:11px;font-weight:700;
-  color:var(--text2);letter-spacing:.5px;transform:rotate(180deg);}
+  color:var(--text2);letter-spacing:.5px;}
 
 .ref-overlay{
   display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:300;
@@ -162,9 +162,9 @@ textarea{resize:vertical;min-height:62px;line-height:1.6;}
   background:var(--surface);border-left:1px solid var(--border);
   z-index:400;overflow-y:auto;
   transform:translateX(100%);transition:transform .28s cubic-bezier(.4,0,.2,1);
-  display:flex;flex-direction:column;
+  display:flex;flex-direction:column;pointer-events:none;
 }
-.ref-drawer.open{transform:translateX(0);}
+.ref-drawer.open{transform:translateX(0);pointer-events:auto;}
 
 .ref-drawer-header{
   display:flex;align-items:center;justify-content:space-between;
@@ -581,6 +581,7 @@ function copyAllResults(){
 
 // ── Main analyze ───────────────────────────────────────────
 function analyze(){
+  try {
   const seq=normalize(document.getElementById('seqInput').value);
   const seq2raw=normalize(document.getElementById('seq2Input').value);
   const seq2=seq2raw&&isValid(seq2raw)?seq2raw:null;
@@ -674,6 +675,10 @@ function analyze(){
   const r=document.getElementById('results');
   r.classList.add('show');
   r.scrollIntoView({behavior:'smooth',block:'start'});
+  } catch(err) {
+    alert('⚠ 解析エラー: ' + err.message + '\n\nF12でコンソールを確認してください。');
+    console.error('[analyze error]', err);
+  }
 }
 
 document.addEventListener('DOMContentLoaded',initPresets);
